@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiError } from "@/lib/api-error";
 import { parseLeadInput, serializeLead, toPrismaData } from "@/lib/leads";
+
+export const runtime = "nodejs";
 
 export async function GET() {
   try {
@@ -8,8 +11,8 @@ export async function GET() {
       orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json(leads.map(serializeLead));
-  } catch {
-    return NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 });
+  } catch (error) {
+    return apiError(error, "Failed to fetch leads");
   }
 }
 
@@ -22,12 +25,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
+    const now = new Date();
     const lead = await prisma.lead.create({
-      data: toPrismaData(input),
+      data: {
+        ...toPrismaData(input),
+        createdAt: now,
+        updatedAt: now,
+      },
     });
 
     return NextResponse.json(serializeLead(lead), { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Failed to create lead" }, { status: 500 });
+  } catch (error) {
+    return apiError(error, "Failed to create lead");
   }
 }

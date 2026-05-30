@@ -1,20 +1,27 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaLibSQL } from "@prisma/adapter-libsql";
+import { PrismaLibSQL as PrismaLibSQLNode } from "@prisma/adapter-libsql";
+import { PrismaLibSQL as PrismaLibSQLWeb } from "@prisma/adapter-libsql/web";
 import { getTursoConfig } from "./turso";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+function createTursoAdapter(config: { url: string; authToken: string }) {
+  // Vercel serverless works reliably with the web/fetch-based adapter
+  const Adapter = process.env.VERCEL ? PrismaLibSQLWeb : PrismaLibSQLNode;
+  return new Adapter({
+    url: config.url,
+    authToken: config.authToken,
+  });
+}
+
 function createPrismaClient() {
   const turso = getTursoConfig();
 
   if (turso) {
     return new PrismaClient({
-      adapter: new PrismaLibSQL({
-        url: turso.url,
-        authToken: turso.authToken,
-      }),
+      adapter: createTursoAdapter(turso),
       log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
     });
   }
@@ -26,9 +33,7 @@ function createPrismaClient() {
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+globalForPrisma.prisma = prisma;
 
 export function createLocalPrismaClient() {
   return new PrismaClient();
@@ -42,9 +47,6 @@ export function createTursoPrismaClient() {
     );
   }
   return new PrismaClient({
-    adapter: new PrismaLibSQL({
-      url: turso.url,
-      authToken: turso.authToken,
-    }),
+    adapter: createTursoAdapter(turso),
   });
 }

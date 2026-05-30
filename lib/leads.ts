@@ -47,15 +47,21 @@ export function parseLeadInput(body: Record<string, unknown>): LeadInput {
   return input;
 }
 
+export function parseFollowupDate(value: string | null | undefined): Date | null {
+  if (!value?.trim()) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function toPrismaData(input: LeadInput) {
   return {
     name: input.name,
-    company: input.company ?? null,
-    contact: input.contact ?? null,
+    company: input.company?.trim() || null,
+    contact: input.contact?.trim() || null,
     channel: input.channel ?? null,
     status: input.status ?? "Cold",
-    value: input.value ?? null,
-    followup: input.followup ? new Date(input.followup) : null,
-    notes: input.notes ?? null,
+    value: input.value?.trim() || null,
+    followup: parseFollowupDate(input.followup),
+    notes: input.notes?.trim() || null,
   };
 }

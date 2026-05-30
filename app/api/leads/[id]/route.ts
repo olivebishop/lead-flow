@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiError } from "@/lib/api-error";
 import { parseLeadInput, serializeLead, toPrismaData } from "@/lib/leads";
 import { shouldResetReminder } from "@/lib/reminders";
+
+export const runtime = "nodejs";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -17,8 +20,8 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     return NextResponse.json(serializeLead(lead));
-  } catch {
-    return NextResponse.json({ error: "Failed to fetch lead" }, { status: 500 });
+  } catch (error) {
+    return apiError(error, "Failed to fetch lead");
   }
 }
 
@@ -58,12 +61,15 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const lead = await prisma.lead.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
     });
 
     return NextResponse.json(serializeLead(lead));
-  } catch {
-    return NextResponse.json({ error: "Failed to update lead" }, { status: 500 });
+  } catch (error) {
+    return apiError(error, "Failed to update lead");
   }
 }
 
@@ -78,7 +84,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
     await prisma.lead.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Failed to delete lead" }, { status: 500 });
+  } catch (error) {
+    return apiError(error, "Failed to delete lead");
   }
 }
