@@ -1,0 +1,24 @@
+name: Follow-up reminders
+
+on:
+  schedule:
+    # Daily at 6:00 AM UTC — adjust to your timezone if needed
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminder email
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.REMINDER_URL }}")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body"
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "Request failed with status $http_code"
+            exit 1
+          fi

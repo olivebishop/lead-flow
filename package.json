@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:push": "prisma db push",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "reminders:send": "tsx scripts/send-reminders.ts"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -34,6 +35,7 @@
     "react-dom": "19.2.4",
     "react-resizable-panels": "^4.11.2",
     "recharts": "3.8.0",
+    "resend": "^6.12.4",
     "shadcn": "^4.8.2",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
@@ -49,6 +51,7 @@
     "eslint-config-next": "16.2.6",
     "prisma": "^6.19.3",
     "tailwindcss": "^4",
+    "tsx": "^4.22.3",
     "typescript": "^5"
   }
 }

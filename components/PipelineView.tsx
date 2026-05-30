@@ -1,17 +1,16 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { formatFollowup, formatValue } from "@/lib/followup";
-import {
-  CHANNEL_LABELS,
-  STATUSES,
-} from "@/lib/constants";
-import type { LeadChannel } from "@/lib/constants";
+import { CHANNEL_LABELS, STATUSES } from "@/lib/constants";
+import type { LeadChannel, LeadStatus } from "@/lib/constants";
 import type { Lead } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type PipelineViewProps = {
   leads: Lead[];
   onSelectLead: (lead: Lead) => void;
+  onMoveLead: (id: string, status: LeadStatus) => void;
 };
 
 function LeadCard({
@@ -21,14 +20,28 @@ function LeadCard({
   lead: Lead;
   onClick: () => void;
 }) {
+  const dragged = useRef(false);
   const followup = formatFollowup(lead.followup);
   const value = formatValue(lead.value);
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full rounded-none border border-border bg-card p-3 text-left shadow-sm transition-all hover:border-foreground/20 hover:shadow-md"
+    <div
+      draggable
+      onDragStart={(e) => {
+        dragged.current = true;
+        e.dataTransfer.setData("text/plain", lead.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      onDragEnd={() => {
+        setTimeout(() => {
+          dragged.current = false;
+        }, 0);
+      }}
+      onClick={() => {
+        if (dragged.current) return;
+        onClick();
+      }}
+      className="w-full cursor-grab border border-border bg-card p-3 text-left shadow-sm transition-all hover:border-foreground/20 hover:shadow-md active:cursor-grabbing"
     >
       <p className="font-medium text-foreground">{lead.name}</p>
       {lead.company && (
@@ -56,19 +69,44 @@ function LeadCard({
           {followup.label}
         </span>
       )}
-    </button>
+    </div>
   );
 }
 
-export function PipelineView({ leads, onSelectLead }: PipelineViewProps) {
+export function PipelineView({ leads, onSelectLead, onMoveLead }: PipelineViewProps) {
+  const [dragOverStatus, setDragOverStatus] = useState<LeadStatus | null>(null);
+
+  const handleDrop = (status: LeadStatus, e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverStatus(null);
+    const id = e.dataTransfer.getData("text/plain");
+    if (!id) return;
+    const lead = leads.find((l) => l.id === id);
+    if (lead && lead.status !== status) {
+      onMoveLead(id, status);
+    }
+  };
+
   return (
     <div className="grid gap-3 overflow-x-auto pb-2 md:grid-cols-3 lg:grid-cols-6">
       {STATUSES.map((status) => {
         const columnLeads = leads.filter((l) => l.status === status);
+        const isDragOver = dragOverStatus === status;
+
         return (
           <div
             key={status}
-            className="flex min-w-[200px] flex-col border border-border bg-muted/30"
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              setDragOverStatus(status);
+            }}
+            onDragLeave={() => setDragOverStatus(null)}
+            onDrop={(e) => handleDrop(status, e)}
+            className={cn(
+              "flex min-w-[200px] flex-col border border-border bg-muted/30 transition-colors",
+              isDragOver && "border-foreground/30 bg-muted/60"
+            )}
           >
             <div className="flex items-center justify-between border-b border-border px-3 py-2">
               <h3 className="text-xs font-semibold tracking-wider uppercase">
@@ -80,8 +118,15 @@ export function PipelineView({ leads, onSelectLead }: PipelineViewProps) {
             </div>
             <div className="flex flex-1 flex-col gap-2 p-2">
               {columnLeads.length === 0 ? (
-                <div className="flex flex-1 items-center justify-center rounded-none border border-dashed border-border p-6 text-center">
-                  <p className="text-xs text-muted-foreground">No leads yet</p>
+                <div
+                  className={cn(
+                    "flex flex-1 items-center justify-center border border-dashed border-border p-6 text-center",
+                    isDragOver && "border-foreground/30 bg-background/50"
+                  )}
+                >
+                  <p className="text-xs text-muted-foreground">
+                    {isDragOver ? "Drop here" : "No leads yet"}
+                  </p>
                 </div>
               ) : (
                 columnLeads.map((lead) => (

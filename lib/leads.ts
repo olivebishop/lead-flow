@@ -1,9 +1,8 @@
-import type { Lead as PrismaLead } from "@prisma/client";
-import type { Lead, LeadInput } from "./types";
+import type { DbLead, Lead, LeadInput } from "./types";
 import { STATUSES, CHANNELS } from "./constants";
 import type { LeadChannel, LeadStatus } from "./constants";
 
-export function serializeLead(lead: PrismaLead): Lead {
+export function serializeLead(lead: DbLead): Lead {
   return {
     id: lead.id,
     name: lead.name,

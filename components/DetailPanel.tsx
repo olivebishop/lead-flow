@@ -88,11 +88,12 @@ export function DetailPanel({
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>{lead.name}</SheetTitle>
-          </SheetHeader>
+          <div className="px-8 sm:px-10">
+            <SheetHeader className="p-0 pt-8 pb-6 pr-10">
+              <SheetTitle>{lead.name}</SheetTitle>
+            </SheetHeader>
 
-          <div className="space-y-6 px-8 pb-8">
+            <div className="space-y-6 pb-10">
             <div className="space-y-3">
               {lead.company && (
                 <DetailRow label="Company" value={lead.company} />
@@ -187,6 +188,7 @@ export function DetailPanel({
                 <Trash2 className="size-3.5" />
                 Delete
               </Button>
+            </div>
             </div>
           </div>
         </SheetContent>
