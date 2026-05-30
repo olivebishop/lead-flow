@@ -111,17 +111,42 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
 
 1. Push the repo to GitHub
 2. Import the project in [Vercel](https://vercel.com)
-3. Set environment variables in the Vercel dashboard:
-   - `DATABASE_URL`
-   - `RESEND_API_KEY`
-   - `REMINDER_EMAIL`
-   - `EMAIL_FROM`
-   - `CRON_SECRET`
-4. Add GitHub Actions secrets (see above)
+3. Connect **Turso** via Vercel → Integrations → Turso (auto-sets `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`)
+4. Set remaining env vars: `RESEND_API_KEY`, `REMINDER_EMAIL`, `EMAIL_FROM`, `CRON_SECRET`
+5. Sync local data once (see **Database on Vercel** below)
+6. Add GitHub Actions secrets (see above)
 
-### Database on Vercel
+### Database on Vercel (data stays off GitHub)
 
-SQLite file storage (`file:./dev.db`) **does not persist** on Vercel's serverless runtime. For production, use a hosted database such as [Turso](https://turso.tech) or Postgres and update `DATABASE_URL` accordingly. Keep `file:./dev.db` for local development only.
+Your `prisma/dev.db` file is **gitignored** — personal leads never appear on public GitHub. That's correct and intentional.
+
+Vercel cannot run a SQLite file from the repo. Production uses **Turso** (hosted SQLite) via the Vercel integration.
+
+| Environment | Database |
+|-------------|----------|
+| **Local** | `prisma/dev.db` (on your machine only) |
+| **Production** | Turso cloud (via Vercel integration) |
+
+#### One-time setup
+
+1. In Vercel: **Integrations → Turso** → connect your database to the project  
+   This sets `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` automatically.
+
+2. Copy those two values into your local `.env` (from Vercel → Settings → Environment Variables).
+
+3. Sync your local leads to production:
+   ```bash
+   pnpm db:sync
+   ```
+   This pushes the schema and copies all leads from `prisma/dev.db` to Turso — **without committing anything to GitHub**.
+
+4. Redeploy on Vercel. Your leads will appear at `lf-app.vercel.app`.
+
+#### After adding leads locally
+
+Run `pnpm db:sync` again whenever you want to copy local changes to production.
+
+**Do not** set `DATABASE_URL=file:./dev.db` on Vercel.
 
 ## Project structure
 
